@@ -8,7 +8,7 @@
 namespace fs = std::filesystem;
 
 
-double calcMean(std::vector<int> &data) {
+double calcMean(std::vector<int> data) {
     auto mid = data.begin() + data.size() / 2;
     if (data.size() % 2 == 1) {
         std::nth_element(data.begin(), mid, data.end());
@@ -22,13 +22,13 @@ double calcMean(std::vector<int> &data) {
 }
 
 template<typename Comparator>
-auto sequenceFinder(std::vector<int> &data, Comparator comp) {
+std::pair<std::vector<int>::iterator, std::vector<int>::iterator> sequenceFinder(std::vector<int> &data, Comparator comp) {
     auto start = data.begin();
     auto end = data.begin();
     auto bestStart = data.begin();
     auto bestEnd = data.begin();
-    for (auto iter = data.begin() + 1; iter != data.end(); ++iter) {
-        if (comp(*iter, *end)) {
+    for (auto iter = data.begin() + 1; iter != data.end(); iter++) {
+        if (comp(*end, *iter)) {
             end++;
         } else {
             if (std::distance(start, end) > std::distance(bestStart, bestEnd)) {
@@ -39,11 +39,7 @@ auto sequenceFinder(std::vector<int> &data, Comparator comp) {
             end = iter;
         }
     }
-    if (std::distance(start, end) > std::distance(bestStart, bestEnd)) {
-        bestStart = start;
-        bestEnd = end;
-    }
-    return std::pair(bestStart, bestEnd + 1);
+    return std::make_pair(bestStart, bestEnd+1);
 }
 
 class avgAccumulator {
@@ -159,9 +155,10 @@ public:
             maximum.accumulate(iter);
             average.accumulate(iter);
         }
-        mean = calcMean(data);
         ascSeq = sequenceFinder(data, std::greater<int>());
         desSeq = sequenceFinder(data, std::less<int>());
+        mean = calcMean(data);
+
     }
 
 

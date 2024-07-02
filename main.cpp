@@ -4,29 +4,78 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <optional>
 
 namespace fs = std::filesystem;
+using sequenceMarker = const std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
 
+std::ostream &operator<<(std::ostream &os, std::vector<int> &data) {
+    for (auto iter = data.begin(); iter != data.end(); iter++) {
+        os << *iter;
+        if (iter != data.end() - 1) {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
+struct stats {
+    int min{};
+    int max{};
+    double avg{};
+    double median{};
+    std::vector<int> ascSeq;
+    std::vector<int> desSeq;
+
+    friend std::ostream &operator<<(std::ostream &os, stats &value) {
+        os << "Max: " << value.max << std::endl;
+        os << "Min: " << value.min << std::endl;
+        os << "Median: " << value.median << std::endl;
+        os << "Average: " << value.avg << std::endl;
+        os << "Ascending sequence: " << value.ascSeq << std::endl;
+        os << "Ascending sequence: " << value.desSeq << std::endl;
+        return os;
+    }
+
+    stats() = default;
+
+    stats(int min, int max, double avg, double median, std::vector<int> ascSeq, std::vector<int> desSeq) {
+        this->min = min;
+        this->max = max;
+        this->avg = avg;
+        this->median = median;
+        this->ascSeq = ascSeq;
+        this->desSeq = desSeq;
+    }
+};
 
 double calcMean(std::vector<int> data) {
     auto mid = data.begin() + data.size() / 2;
+
     if (data.size() % 2 == 1) {
         std::nth_element(data.begin(), mid, data.end());
         return *mid;
     } else {
-        auto mid_prev = data.begin() + data.size() / 2 - 1;
+        auto midNeighbour = data.begin() + data.size() / 2 - 1;
         std::nth_element(data.begin(), mid, data.end());
-        std::nth_element(data.begin(), mid_prev, data.end());
-        return (*mid + *mid_prev) / 2.0;
+        std::nth_element(data.begin(), midNeighbour, data.end());
+        return (*mid + *midNeighbour) / 2.0;
     }
 }
 
 template<typename Comparator>
-std::pair<std::vector<int>::iterator, std::vector<int>::iterator> sequenceFinder(std::vector<int> &data, Comparator comp) {
+sequenceMarker sequenceFinder(const std::vector<int> &data, Comparator comp) {
+
     auto start = data.begin();
     auto end = data.begin();
+
     auto bestStart = data.begin();
     auto bestEnd = data.begin();
+
+    if (data.size() == 1) {
+        return std::make_pair(start, end);
+    }
+
     for (auto iter = data.begin() + 1; iter != data.end(); iter++) {
         if (comp(*end, *iter)) {
             end++;
@@ -39,173 +88,134 @@ std::pair<std::vector<int>::iterator, std::vector<int>::iterator> sequenceFinder
             end = iter;
         }
     }
-    return std::make_pair(bestStart, bestEnd+1);
+    return std::make_pair(bestStart, bestEnd + 1);
 }
 
 class avgAccumulator {
-    double result;
+    std::optional<double> result;
     std::size_t length;
 public:
-    void accumulate(int value) {
-        this->result += value / static_cast<double>(length);
+
+    void accumulate(const int value) {
+        result.value() += value / static_cast<double>(length);
     }
 
-    double getResult() const {
-        return this->result;
+    std::optional<double> getResult() const {
+        return result;
     }
 
-    explicit avgAccumulator(std::size_t length) : result(double(0)) {
-        this->length = length;
+    explicit avgAccumulator(std::size_t size) {
+        length = size;
+        result = 0;
     };
 };
 
+
 class minAccumulator {
-    bool isInit;
-    int result;
+    std::optional<int> result;
 public:
-    void accumulate(int value) {
-        if (!(this->isInit)) {
-            this->result = value;
-            this->isInit = true;
-        } else if (value < this->result) {
-            this->result = value;
-        }
+
+    void accumulate(const int value) {
+        result = std::min(result.value_or(value), value);
     }
 
-    int getResult() const {
-        if (!isInit) {
-            throw std::runtime_error("No values accumulated!");
-        } else {
-            return this->result;
-        }
+    std::optional<int> getResult() const {
+        return result;
     }
 
-    minAccumulator() : isInit(false), result(int()) {};
+    minAccumulator() = default;
+
+    ~minAccumulator() = default;
 };
 
 class maxAccumulator {
-    bool isInit;
-    int result;
+    std::optional<int> result;
 public:
-    void accumulate(int value) {
-        if (!(this->isInit)) {
-            this->result = value;
-            this->isInit = true;
-        } else if (value > this->result) {
-            this->result = value;
-        }
+
+    void accumulate(const int value) {
+        result = std::max(result.value_or(value), value);
     }
 
-    int getResult() const {
-        if (!isInit) {
-            throw std::runtime_error("No values accumulated!");
-        } else {
-            return this->result;
-        }
+    std::optional<int> getResult() const {
+        return result;
     }
 
-    maxAccumulator() : isInit(false), result(int()) {};
+    maxAccumulator() = default;
+
+    ~maxAccumulator() = default;
 };
 
-
-bool inputPath(fs::path &filePath) {
-    std::string pathString;
-    std::cin >> pathString;
-    filePath = fs::path(pathString);
-    if (fs::exists(filePath) && fs::is_regular_file(filePath)) {
-        return true;
-    }
-    return false;
-}
-
-void loadData(fs::path &filePath, std::vector<int> &result) {
-    std::ifstream fileReader(filePath);
-    if (fileReader.is_open()) {
-        std::string strInput;
-        int temp = 0;
-        while (std::getline(fileReader, strInput)) {
-            try {
-                temp = std::stoi(strInput);
-                result.push_back(temp);
-            }
-            catch (const std::invalid_argument &e) {
-                throw std::runtime_error("Invalid data: Non-integer value found - " + strInput);
-            } catch (const std::out_of_range &e) {
-                throw std::runtime_error("Invalid data: Value out of range - " + strInput);
-            }
+std::vector<int> loadData(std::istream &is) {
+    std::vector<int> result;
+    std::string strInput;
+    int temp = 0;
+    while (std::getline(is, strInput)) {
+        try {
+            temp = std::stoi(strInput);
+            result.push_back(temp);
         }
+        catch (const std::invalid_argument &e) {
+            throw std::runtime_error("Invalid data: Non-integer value found - " + strInput);
+        } catch (const std::out_of_range &e) {
+            throw std::runtime_error("Invalid data: Value out of range - " + strInput);
+        }
+    }
+    if (std::empty(result)) {
+        throw std::runtime_error("Data file is empty!");
+    }
+    return result;
+}
+
+std::vector<int> handleSeqOutput(sequenceMarker &marker) {
+    if (marker.first == marker.second) {
+        return {*(marker.first)};
     } else {
-        throw std::runtime_error("File is not opened!");
+        std::vector<int> result;
+        for (auto i = marker.first; i != marker.second; i++) {
+            result.push_back(*i);
+        }
+        return result;
     }
 }
 
-class statCollector {
-    std::vector<int> data;
+stats calcValues(const std::vector<int> &data) {
     minAccumulator minimum;
     maxAccumulator maximum;
-    avgAccumulator average;
-    double mean;
-    std::pair<std::vector<int>::iterator, std::vector<int>::iterator> ascSeq;
-    std::pair<std::vector<int>::iterator, std::vector<int>::iterator> desSeq;
-
-public:
-    void calcValues() {
-        for (auto iter: data) {
-            minimum.accumulate(iter);
-            maximum.accumulate(iter);
-            average.accumulate(iter);
-        }
-        ascSeq = sequenceFinder(data, std::greater<int>());
-        desSeq = sequenceFinder(data, std::less<int>());
-        mean = calcMean(data);
-
+    avgAccumulator average(data.size());
+    for (const auto iter: data) {
+        minimum.accumulate(iter);
+        maximum.accumulate(iter);
+        average.accumulate(iter);
     }
+    sequenceMarker ascSeqMarker = sequenceFinder(data, std::less<int>());
+    sequenceMarker desSeqMarker = sequenceFinder(data, std::greater<int>());
+    auto ascendingSeq = handleSeqOutput(ascSeqMarker);
+    auto descendingSeq = handleSeqOutput(desSeqMarker);
+    auto median = calcMean(data);
+    return {minimum.getResult().value(), maximum.getResult().value(), median, average.getResult().value(), ascendingSeq,
+            descendingSeq};
+}
 
-
-    void displayValues(std::ostream &os) {
-        os << "Minimum: " << minimum.getResult() << std::endl;
-        os << "Maximum: " << maximum.getResult() << std::endl;
-        os << "Average: " << average.getResult() << std::endl;
-        os << "Mean: " << mean << std::endl;
-        os << "Ascending Sequence: ";
-        for (auto iter = ascSeq.first; iter != ascSeq.second; ++iter) {
-            os << *iter;
-            if (iter != ascSeq.second - 1) {
-                os << ", ";
-            }
-        }
-        os << std::endl;
-        os << "Descending Sequence: ";
-        for (auto iter = desSeq.first; iter != desSeq.second; ++iter) {
-            os << *iter;
-            if (iter != desSeq.second - 1) {
-                os << ", ";
-            }
-        }
-        os << std::endl;
+void validatePath(fs::path &filePath) {
+    if (!fs::exists(filePath)) {
+        throw std::runtime_error("File does not exist: " + filePath.string());
     }
-
-    statCollector(std::vector<int> &data) : average(data.size()), minimum(), maximum() {
-        mean = 0;
-        this->data = data;
+    if (!fs::is_regular_file(filePath)) {
+        throw std::runtime_error("Path is not a regular file: " + filePath.string());
     }
+}
 
-    ~statCollector() = default;
-};
-
-int main() {
+int main(int argc, char *argv[]) {
     try {
         std::vector<int> data;
-        fs::path filePath;
-        inputPath(filePath);
-        loadData(filePath, data);
-        auto *coll = new statCollector(data);
-        coll->calcValues();
-        coll->displayValues(std::cout);
-        delete (coll);
+        fs::path filePath = argv[1];
+        validatePath(filePath);
+        std::ifstream file(filePath);
+        data = loadData(file);
+        auto res = calcValues(data);
+        std::cout << res << std::endl;
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
-    return 0;
 }

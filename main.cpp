@@ -33,7 +33,7 @@ struct stats {
         os << "Median: " << value.median << std::endl;
         os << "Average: " << value.avg << std::endl;
         os << "Ascending sequence: " << value.ascSeq << std::endl;
-        os << "Ascending sequence: " << value.desSeq << std::endl;
+        os << "Descending sequence: " << value.desSeq << std::endl;
         return os;
     }
 
@@ -110,39 +110,29 @@ public:
     };
 };
 
-
-class minAccumulator {
+template<typename Comparator>
+class comparableAccumulator {
     std::optional<int> result;
+    Comparator comp;
 public:
 
     void accumulate(const int value) {
-        result = std::min(result.value_or(value), value);
+        if (result.has_value()) {
+            if (comp(value, result.value())) {
+                result = value;
+            }
+        } else {
+            result = value;
+        }
     }
 
     std::optional<int> getResult() const {
         return result;
     }
 
-    minAccumulator() = default;
+    comparableAccumulator(Comparator compare = Comparator()) : comp(compare) {};
 
-    ~minAccumulator() = default;
-};
-
-class maxAccumulator {
-    std::optional<int> result;
-public:
-
-    void accumulate(const int value) {
-        result = std::max(result.value_or(value), value);
-    }
-
-    std::optional<int> getResult() const {
-        return result;
-    }
-
-    maxAccumulator() = default;
-
-    ~maxAccumulator() = default;
+    ~comparableAccumulator() = default;
 };
 
 std::vector<int> loadData(std::istream &is) {
@@ -179,8 +169,8 @@ std::vector<int> handleSeqOutput(sequenceMarker &marker) {
 }
 
 stats calcValues(const std::vector<int> &data) {
-    minAccumulator minimum;
-    maxAccumulator maximum;
+    comparableAccumulator<std::less<int>> minimum;
+    comparableAccumulator<std::greater<int>> maximum;
     avgAccumulator average(data.size());
     for (const auto iter: data) {
         minimum.accumulate(iter);

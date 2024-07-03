@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <optional>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 using sequenceMarker = const std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
@@ -31,9 +32,9 @@ struct stats {
         os << "Max: " << value.max << std::endl;
         os << "Min: " << value.min << std::endl;
         os << "Median: " << value.median << std::endl;
-        os << "Average: " << value.avg << std::endl;
+        os << "Average: " << std::setprecision(std::numeric_limits<double>::max_digits10) << value.avg << std::endl;
         os << "Ascending sequence: " << value.ascSeq << std::endl;
-        os << "Descending sequence: " << value.desSeq << std::endl;
+        os << "Descending sequence: " << value.desSeq;
         return os;
     }
 
@@ -96,7 +97,7 @@ class avgAccumulator {
     std::size_t length;
 public:
 
-    void accumulate(const int value) {
+    void accumulate(int value) {
         result.value() += value / static_cast<double>(length);
     }
 
@@ -113,12 +114,11 @@ public:
 template<typename Comparator>
 class comparableAccumulator {
     std::optional<int> result;
-    Comparator comp;
 public:
 
-    void accumulate(const int value) {
+    void accumulate(int value) {
         if (result.has_value()) {
-            if (comp(value, result.value())) {
+            if (Comparator comp; comp(value, result.value())) {
                 result = value;
             }
         } else {
@@ -130,7 +130,7 @@ public:
         return result;
     }
 
-    comparableAccumulator(Comparator compare = Comparator()) : comp(compare) {};
+    comparableAccumulator() = default;
 
     ~comparableAccumulator() = default;
 };
@@ -182,7 +182,7 @@ stats calcValues(const std::vector<int> &data) {
     auto ascendingSeq = handleSeqOutput(ascSeqMarker);
     auto descendingSeq = handleSeqOutput(desSeqMarker);
     auto median = calcMean(data);
-    return {minimum.getResult().value(), maximum.getResult().value(), median, average.getResult().value(), ascendingSeq,
+    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median, ascendingSeq,
             descendingSeq};
 }
 
@@ -197,6 +197,9 @@ void validatePath(fs::path &filePath) {
 
 int main(int argc, char *argv[]) {
     try {
+        if (argc < 2) {
+            throw std::runtime_error("No path provided");
+        }
         std::vector<int> data;
         fs::path filePath = argv[1];
         validatePath(filePath);

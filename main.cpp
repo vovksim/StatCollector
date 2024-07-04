@@ -47,36 +47,36 @@ struct stats {
                                                                                      desSeq(desSeq) {};
 };
 
-double calcMean(std::vector<int> data) {
+std::optional<double> calcMean(std::vector<int> data) {
+    if (data.begin() == data.end()) {
+        return {};
+    }
+
     auto mid = data.begin() + data.size() / 2;
+
 
     if (data.size() % 2 == 1) {
         std::nth_element(data.begin(), mid, data.end());
-        return *mid;
+        return {*mid};
     } else {
         auto midNeighbour = data.begin() + data.size() / 2 - 1;
         std::nth_element(data.begin(), mid, data.end());
         std::nth_element(data.begin(), midNeighbour, data.end());
-        return static_cast<double>(*mid + *midNeighbour) / 2.0;
+        return {static_cast<double>(*mid + *midNeighbour) / 2.0};
     }
 }
 
 template<typename Comparator>
 range sequenceFinder(const std::vector<int> &data, Comparator comp) {
+    if (data.begin() == data.end() || data.size() == 1) {
+        return std::make_pair(data.begin(), data.end());
+    }
 
     auto start = data.begin();
     auto end = data.begin();
 
     auto bestStart = data.begin();
     auto bestEnd = data.begin();
-
-    if (data.empty()) {
-        std::make_pair(start, end);
-    }
-
-    if (data.size() == 1) {
-        return std::make_pair(start, end);
-    }
 
     for (auto iter = data.begin() + 1; iter != data.end(); iter++) {
         if (comp(*end, *iter)) {
@@ -165,7 +165,7 @@ stats calcValues(const std::vector<int> &data) {
     range ascSeqMarker = sequenceFinder(data, std::less<int>());
     range desSeqMarker = sequenceFinder(data, std::greater<int>());
     auto median = calcMean(data);
-    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median, ascSeqMarker,
+    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(), ascSeqMarker,
             desSeqMarker};
 }
 

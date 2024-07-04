@@ -9,7 +9,7 @@
 #include <iomanip>
 
 namespace fs = std::filesystem;
-using sequenceMarker = const std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
+using sequenceMarker = std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
 
 std::ostream &operator<<(std::ostream &os, sequenceMarker &data) {
     for (auto iter = data.first; iter != data.second; iter++) {

@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <string>
 #include <fstream>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <optional>
@@ -10,10 +11,10 @@
 namespace fs = std::filesystem;
 using sequenceMarker = const std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
 
-std::ostream &operator<<(std::ostream &os, std::vector<int> &data) {
-    for (auto iter = data.begin(); iter != data.end(); iter++) {
+std::ostream &operator<<(std::ostream &os, sequenceMarker &data) {
+    for (auto iter = data.first; iter != data.second; iter++) {
         os << *iter;
-        if (iter != data.end() - 1) {
+        if (iter != data.second - 1) {
             os << ", ";
         }
     }
@@ -25,8 +26,8 @@ struct stats {
     int max{};
     double avg{};
     double median{};
-    std::vector<int> ascSeq;
-    std::vector<int> desSeq;
+    sequenceMarker ascSeq;
+    sequenceMarker desSeq;
 
     friend std::ostream &operator<<(std::ostream &os, stats &value) {
         os << "Max: " << value.max << std::endl;
@@ -40,14 +41,12 @@ struct stats {
 
     stats() = default;
 
-    stats(int min, int max, double avg, double median, std::vector<int> ascSeq, std::vector<int> desSeq) {
-        this->min = min;
-        this->max = max;
-        this->avg = avg;
-        this->median = median;
-        this->ascSeq = ascSeq;
-        this->desSeq = desSeq;
-    }
+    stats(int min, int max, double avg, double median, sequenceMarker ascSeq, sequenceMarker desSeq) : min(min),
+                                                                                                       max(max),
+                                                                                                       avg(avg),
+                                                                                                       median(median),
+                                                                                                       ascSeq(ascSeq),
+                                                                                                       desSeq(desSeq) {};
 };
 
 double calcMean(std::vector<int> data) {
@@ -60,7 +59,7 @@ double calcMean(std::vector<int> data) {
         auto midNeighbour = data.begin() + data.size() / 2 - 1;
         std::nth_element(data.begin(), mid, data.end());
         std::nth_element(data.begin(), midNeighbour, data.end());
-        return (*mid + *midNeighbour) / 2.0;
+        return static_cast<double>(*mid + *midNeighbour) / 2.0;
     }
 }
 
@@ -72,6 +71,10 @@ sequenceMarker sequenceFinder(const std::vector<int> &data, Comparator comp) {
 
     auto bestStart = data.begin();
     auto bestEnd = data.begin();
+
+    if (data.empty()) {
+        std::make_pair(start, end);
+    }
 
     if (data.size() == 1) {
         return std::make_pair(start, end);
@@ -98,7 +101,7 @@ class avgAccumulator {
 public:
 
     void accumulate(int value) {
-        result.value() += value / static_cast<double>(length);
+        result = result.value() + value / static_cast<double>(length);
     }
 
     std::optional<double> getResult() const {
@@ -129,10 +132,6 @@ public:
     std::optional<int> getResult() const {
         return result;
     }
-
-    comparableAccumulator() = default;
-
-    ~comparableAccumulator() = default;
 };
 
 std::vector<int> loadData(std::istream &is) {
@@ -156,18 +155,6 @@ std::vector<int> loadData(std::istream &is) {
     return result;
 }
 
-std::vector<int> handleSeqOutput(sequenceMarker &marker) {
-    if (marker.first == marker.second) {
-        return {*(marker.first)};
-    } else {
-        std::vector<int> result;
-        for (auto i = marker.first; i != marker.second; i++) {
-            result.push_back(*i);
-        }
-        return result;
-    }
-}
-
 stats calcValues(const std::vector<int> &data) {
     comparableAccumulator<std::less<int>> minimum;
     comparableAccumulator<std::greater<int>> maximum;
@@ -179,11 +166,9 @@ stats calcValues(const std::vector<int> &data) {
     }
     sequenceMarker ascSeqMarker = sequenceFinder(data, std::less<int>());
     sequenceMarker desSeqMarker = sequenceFinder(data, std::greater<int>());
-    auto ascendingSeq = handleSeqOutput(ascSeqMarker);
-    auto descendingSeq = handleSeqOutput(desSeqMarker);
     auto median = calcMean(data);
-    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median, ascendingSeq,
-            descendingSeq};
+    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median, ascSeqMarker,
+            desSeqMarker};
 }
 
 void validatePath(fs::path &filePath) {

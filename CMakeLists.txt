@@ -3,4 +3,5 @@ project(StatCollector)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(StatCollector main.cpp)
+add_executable(StatCollector main.cpp
+        stats.hpp)

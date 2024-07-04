@@ -1,15 +1,21 @@
-#include <iostream>
-#include <filesystem>
-#include <string>
-#include <fstream>
-#include <utility>
-#include <vector>
-#include <algorithm>
-#include <optional>
-#include <iomanip>
+#include "stats.hpp"
 
-namespace fs = std::filesystem;
-using range = std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
+
+struct stats {
+    int min{};
+    int max{};
+    double avg{};
+    double median{};
+    range ascSeq;
+    range desSeq;
+
+    stats(int min, int max, double avg, double median, range ascSeq, range desSeq) : min(min),
+                                                                                     max(max),
+                                                                                     avg(avg),
+                                                                                     median(median),
+                                                                                     ascSeq(ascSeq),
+                                                                                     desSeq(desSeq) {};
+};
 
 std::ostream &operator<<(std::ostream &os, range &data) {
     for (auto iter = data.first; iter != data.second; iter++) {
@@ -21,116 +27,42 @@ std::ostream &operator<<(std::ostream &os, range &data) {
     return os;
 }
 
-struct stats {
-    int min{};
-    int max{};
-    double avg{};
-    double median{};
-    range ascSeq;
-    range desSeq;
-
-    friend std::ostream &operator<<(std::ostream &os, stats &value) {
-        os << "Max: " << value.max << std::endl;
-        os << "Min: " << value.min << std::endl;
-        os << "Median: " << value.median << std::endl;
-        os << "Average: " << std::setprecision(std::numeric_limits<double>::max_digits10) << value.avg << std::endl;
-        os << "Ascending sequence: " << value.ascSeq << std::endl;
-        os << "Descending sequence: " << value.desSeq;
-        return os;
-    }
-
-    stats(int min, int max, double avg, double median, range ascSeq, range desSeq) : min(min),
-                                                                                     max(max),
-                                                                                     avg(avg),
-                                                                                     median(median),
-                                                                                     ascSeq(ascSeq),
-                                                                                     desSeq(desSeq) {};
-};
-
-std::optional<double> calcMean(std::vector<int> data) {
-    if (data.begin() == data.end()) {
-        return {};
-    }
-
-    auto mid = data.begin() + data.size() / 2;
-
-
-    if (data.size() % 2 == 1) {
-        std::nth_element(data.begin(), mid, data.end());
-        return {*mid};
-    } else {
-        auto midNeighbour = data.begin() + data.size() / 2 - 1;
-        std::nth_element(data.begin(), mid, data.end());
-        std::nth_element(data.begin(), midNeighbour, data.end());
-        return {static_cast<double>(*mid + *midNeighbour) / 2.0};
-    }
+std::ostream &operator<<(std::ostream &os, stats &value) {
+    os << "Max: " << value.max << std::endl;
+    os << "Min: " << value.min << std::endl;
+    os << "Median: " << value.median << std::endl;
+    os << "Average: " << std::setprecision(std::numeric_limits<double>::max_digits10) << value.avg << std::endl;
+    os << "Ascending sequence: " << value.ascSeq << std::endl;
+    os << "Descending sequence: " << value.desSeq;
+    return os;
 }
 
-template<typename Comparator>
-range sequenceFinder(const std::vector<int> &data, Comparator comp) {
-    if (data.begin() == data.end() || data.size() == 1) {
-        return std::make_pair(data.begin(), data.end());
+
+stats calcValues(const std::vector<int> &data) {
+    st::comparableAccumulator<std::less<int>> minimum;
+    st::comparableAccumulator<std::greater<int>> maximum;
+    st::avgAccumulator average(data.size());
+    for (const auto value: data) {
+        minimum.accumulate(value);
+        maximum.accumulate(value);
+        average.accumulate(value);
     }
-
-    auto start = data.begin();
-    auto end = data.begin();
-
-    auto bestStart = data.begin();
-    auto bestEnd = data.begin();
-
-    for (auto iter = data.begin() + 1; iter != data.end(); iter++) {
-        if (comp(*end, *iter)) {
-            end++;
-        } else {
-            if (std::distance(start, end) > std::distance(bestStart, bestEnd)) {
-                bestStart = start;
-                bestEnd = end;
-            }
-            start = iter;
-            end = iter;
-        }
-    }
-    return std::make_pair(bestStart, bestEnd + 1);
+    range ascSeqMarker = st::sequenceFinder(data, std::less<int>());
+    range desSeqMarker = st::sequenceFinder(data, std::greater<int>());
+    auto median = st::calcMean(data);
+    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(),
+            ascSeqMarker,
+            desSeqMarker};
 }
 
-class avgAccumulator {
-    std::optional<double> result;
-    std::size_t length;
-public:
-
-    void accumulate(int value) {
-        result = result.value() + value / static_cast<double>(length);
+void validatePath(fs::path &filePath) {
+    if (!fs::exists(filePath)) {
+        throw std::runtime_error("File does not exist: " + filePath.string());
     }
-
-    std::optional<double> getResult() const {
-        return result;
+    if (!fs::is_regular_file(filePath)) {
+        throw std::runtime_error("Path is not a regular file: " + filePath.string());
     }
-
-    explicit avgAccumulator(std::size_t size) {
-        length = size;
-        result = 0;
-    };
-};
-
-template<typename Comparator>
-class comparableAccumulator {
-    std::optional<int> result;
-public:
-
-    void accumulate(int value) {
-        if (result.has_value()) {
-            if (Comparator comp; comp(value, result.value())) {
-                result = value;
-            }
-        } else {
-            result = value;
-        }
-    }
-
-    std::optional<int> getResult() const {
-        return result;
-    }
-};
+}
 
 std::vector<int> loadData(std::istream &is) {
     std::vector<int> result;
@@ -151,32 +83,6 @@ std::vector<int> loadData(std::istream &is) {
         throw std::runtime_error("Data file is empty!");
     }
     return result;
-}
-
-stats calcValues(const std::vector<int> &data) {
-    comparableAccumulator<std::less<int>> minimum;
-    comparableAccumulator<std::greater<int>> maximum;
-    avgAccumulator average(data.size());
-    for (const auto value: data) {
-        minimum.accumulate(value);
-        maximum.accumulate(value);
-        average.accumulate(value);
-    }
-    range ascSeqMarker = sequenceFinder(data, std::less<int>());
-    range desSeqMarker = sequenceFinder(data, std::greater<int>());
-    auto median = calcMean(data);
-    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(),
-            ascSeqMarker,
-            desSeqMarker};
-}
-
-void validatePath(fs::path &filePath) {
-    if (!fs::exists(filePath)) {
-        throw std::runtime_error("File does not exist: " + filePath.string());
-    }
-    if (!fs::is_regular_file(filePath)) {
-        throw std::runtime_error("Path is not a regular file: " + filePath.string());
-    }
 }
 
 int main(int argc, char *argv[]) {

@@ -9,9 +9,9 @@
 #include <iomanip>
 
 namespace fs = std::filesystem;
-using sequenceMarker = std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
+using range = std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
 
-std::ostream &operator<<(std::ostream &os, sequenceMarker &data) {
+std::ostream &operator<<(std::ostream &os, range &data) {
     for (auto iter = data.first; iter != data.second; iter++) {
         os << *iter;
         if (iter != data.second - 1) {
@@ -26,8 +26,8 @@ struct stats {
     int max{};
     double avg{};
     double median{};
-    sequenceMarker ascSeq;
-    sequenceMarker desSeq;
+    range ascSeq;
+    range desSeq;
 
     friend std::ostream &operator<<(std::ostream &os, stats &value) {
         os << "Max: " << value.max << std::endl;
@@ -39,14 +39,12 @@ struct stats {
         return os;
     }
 
-    stats() = default;
-
-    stats(int min, int max, double avg, double median, sequenceMarker ascSeq, sequenceMarker desSeq) : min(min),
-                                                                                                       max(max),
-                                                                                                       avg(avg),
-                                                                                                       median(median),
-                                                                                                       ascSeq(ascSeq),
-                                                                                                       desSeq(desSeq) {};
+    stats(int min, int max, double avg, double median, range ascSeq, range desSeq) : min(min),
+                                                                                     max(max),
+                                                                                     avg(avg),
+                                                                                     median(median),
+                                                                                     ascSeq(ascSeq),
+                                                                                     desSeq(desSeq) {};
 };
 
 double calcMean(std::vector<int> data) {
@@ -64,7 +62,7 @@ double calcMean(std::vector<int> data) {
 }
 
 template<typename Comparator>
-sequenceMarker sequenceFinder(const std::vector<int> &data, Comparator comp) {
+range sequenceFinder(const std::vector<int> &data, Comparator comp) {
 
     auto start = data.begin();
     auto end = data.begin();
@@ -164,8 +162,8 @@ stats calcValues(const std::vector<int> &data) {
         maximum.accumulate(iter);
         average.accumulate(iter);
     }
-    sequenceMarker ascSeqMarker = sequenceFinder(data, std::less<int>());
-    sequenceMarker desSeqMarker = sequenceFinder(data, std::greater<int>());
+    range ascSeqMarker = sequenceFinder(data, std::less<int>());
+    range desSeqMarker = sequenceFinder(data, std::greater<int>());
     auto median = calcMean(data);
     return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median, ascSeqMarker,
             desSeqMarker};

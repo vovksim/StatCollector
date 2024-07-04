@@ -157,15 +157,16 @@ stats calcValues(const std::vector<int> &data) {
     comparableAccumulator<std::less<int>> minimum;
     comparableAccumulator<std::greater<int>> maximum;
     avgAccumulator average(data.size());
-    for (const auto iter: data) {
-        minimum.accumulate(iter);
-        maximum.accumulate(iter);
-        average.accumulate(iter);
+    for (const auto value: data) {
+        minimum.accumulate(value);
+        maximum.accumulate(value);
+        average.accumulate(value);
     }
     range ascSeqMarker = sequenceFinder(data, std::less<int>());
     range desSeqMarker = sequenceFinder(data, std::greater<int>());
     auto median = calcMean(data);
-    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(), ascSeqMarker,
+    return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(),
+            ascSeqMarker,
             desSeqMarker};
 }
 
@@ -186,12 +187,15 @@ int main(int argc, char *argv[]) {
         std::vector<int> data;
         fs::path filePath = argv[1];
         validatePath(filePath);
-        std::ifstream file(filePath);
-        data = loadData(file);
-        auto res = calcValues(data);
-        std::cout << res << std::endl;
+        if (std::ifstream file(filePath); file.is_open()) {
+            data = loadData(file);
+            auto res = calcValues(data);
+            std::cout << res << std::endl;
+        }
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
+        return -1;
     }
+    return 0;
 }

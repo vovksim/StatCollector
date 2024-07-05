@@ -38,7 +38,7 @@ namespace statistics {
 
     template<typename Comparator>
     range sequenceFinder(const std::vector<int> &data, Comparator comp) {
-        if (data.begin() == data.end() || data.size() == 1) {
+        if (data.size() <= 1) {
             return std::make_pair(data.begin(), data.end());
         }
 

@@ -60,6 +60,13 @@ namespace st {
                 end = iter;
             }
         }
+
+        //checking last iterators pair
+        if (std::distance(start, end) > std::distance(bestStart, bestEnd)) {
+            bestStart = start;
+            bestEnd = end;
+        }
+
         return std::make_pair(bestStart, bestEnd + 1);
     }
 

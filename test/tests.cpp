@@ -29,32 +29,35 @@ void emptyDataTest() {
     auto ascSeq = st::sequenceFinder(emptyVector, std::greater<>());
     auto desSeq = st::sequenceFinder(emptyVector, std::less<>());
     auto median = st::calcMean(emptyVector);
-
-    assert(minAccumulator.getResult() == std::nullopt);
-    assert(maxAccumulator.getResult() == std::nullopt);
-    assert(averageAccumulator.getResult() == std::nullopt);
+    std::optional<double> integralExpected = std::nullopt;
+    assert(minAccumulator.getResult() == integralExpected);
+    assert(maxAccumulator.getResult() == integralExpected);
+    assert(averageAccumulator.getResult() == integralExpected);
+    assert(median == integralExpected);
     assert(ascSeq.first == ascSeq.second);
     assert(desSeq.first == desSeq.second);
-    assert(median == std::nullopt);
 }
 
-void oddDataSizeMedian() {
+void oddDataSizeMedianTest() {
     std::vector<int> oddDataSize{234, 6, 45, 2, 12, 31};
     auto median = st::calcMean(oddDataSize);
-    assert(median == 21.5);
+    auto expected = 21.5;
+    assert(median == expected);
 }
 
-void evenDataSizeMedian() {
+void evenDataSizeMedianTest() {
     std::vector<int> oddDataSize{8, 6, 3, 21, 243, 64, 6};
     auto median = st::calcMean(oddDataSize);
-    assert(median == 8);
+    auto expected = 8;
+    assert(median == expected);
 }
 
-void overflowRiskMedian() {
+void overflowRiskMedianTest() {
     std::vector<int> oddDataSize;
     oddDataSize.assign(10, std::numeric_limits<int>::max());
     auto median = st::calcMean(oddDataSize);
-    assert(median.value() == std::numeric_limits<int>::max());
+    auto expected = std::numeric_limits<int>::max();
+    assert(median.value() == expected);
 }
 
 void comparableAccumulatorRandomTest() {
@@ -67,14 +70,31 @@ void comparableAccumulatorRandomTest() {
             min.accumulate(value);
             max.accumulate(value);
         }
-        assert(min.getResult() == *std::min_element(randData.begin(), randData.end()));
+        auto expected = *std::min_element(randData.begin(), randData.end());
+        assert(min.getResult() == expected);
     }
+}
+
+void increasingSequenceFindTest() {
+    std::vector<int> data = {1, 2, 3, 4, 2, 3, 4, 5, 6};
+    auto result = st::sequenceFinder(data, std::less<>());
+    std::vector<int> expected = {2, 3, 4, 5, 6};
+    assert(std::vector<int>(result.first, result.second) == expected);
+}
+
+void decreasingSequenceFindTest() {
+    std::vector<int> data = {5, 4, 3, 2, 1, 6, 5, 4, 3};
+    auto result = st::sequenceFinder(data, std::greater<>());
+    std::vector<int> expected = {5, 4, 3, 2, 1};
+    assert(std::vector<int>(result.first, result.second) == expected);
 }
 
 int main() {
     emptyDataTest();
-    oddDataSizeMedian();
-    evenDataSizeMedian();
-    overflowRiskMedian();
+    oddDataSizeMedianTest();
+    evenDataSizeMedianTest();
+    overflowRiskMedianTest();
     comparableAccumulatorRandomTest();
+    increasingSequenceFindTest();
+    decreasingSequenceFindTest();
 }

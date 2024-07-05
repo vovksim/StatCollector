@@ -1,7 +1,7 @@
 //
 // Created by ivan on 04.07.24.
 //
-#include "../stats.hpp"
+#include "stats.hpp"
 #include <cassert>
 #include <random>
 

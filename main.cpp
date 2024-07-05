@@ -1,4 +1,4 @@
-#include "../stats.hpp"
+#include "stats.hpp"
 
 
 struct stats {

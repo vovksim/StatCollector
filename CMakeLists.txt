@@ -4,8 +4,7 @@ project(StatCollector)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Add the source directory
-add_subdirectory(src)
+add_executable(StatCollectorTest tests.cpp)
 
-# Add the tests directory
-add_subdirectory(test)
+add_executable(StatCollector main.cpp
+        ../stats.hpp)

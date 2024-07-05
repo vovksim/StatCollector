@@ -18,7 +18,7 @@
 namespace fs = std::filesystem;
 using range = std::pair<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
 
-namespace st {
+namespace statistics {
     std::optional<double> calcMean(std::vector<int> data) {
         if (data.begin() == data.end()) {
             return {};

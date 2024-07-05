@@ -39,17 +39,17 @@ std::ostream &operator<<(std::ostream &os, stats &value) {
 
 
 stats calcValues(const std::vector<int> &data) {
-    st::comparableAccumulator<std::less<int>> minimum;
-    st::comparableAccumulator<std::greater<int>> maximum;
-    st::avgAccumulator average(data.size());
+    statistics::comparableAccumulator<std::less<int>> minimum;
+    statistics::comparableAccumulator<std::greater<int>> maximum;
+    statistics::avgAccumulator average(data.size());
     for (const auto value: data) {
         minimum.accumulate(value);
         maximum.accumulate(value);
         average.accumulate(value);
     }
-    range ascSeqMarker = st::sequenceFinder(data, std::less<int>());
-    range desSeqMarker = st::sequenceFinder(data, std::greater<int>());
-    auto median = st::calcMean(data);
+    range ascSeqMarker = statistics::sequenceFinder(data, std::less<int>());
+    range desSeqMarker = statistics::sequenceFinder(data, std::greater<int>());
+    auto median = statistics::calcMean(data);
     return {minimum.getResult().value(), maximum.getResult().value(), average.getResult().value(), median.value(),
             ascSeqMarker,
             desSeqMarker};

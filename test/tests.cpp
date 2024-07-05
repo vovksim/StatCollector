@@ -5,14 +5,20 @@
 #include <cassert>
 #include <random>
 
-void gen_random(std::vector<int> &r, std::size_t length) {
+std::vector<int> genDataVector() {
+    const int MIN_VECTOR_SIZE = 1;
+    const int MAX_VECTOR_SIZE = 1000;
+    std::vector<int> r;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> distrib(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+    std::uniform_int_distribution<int> distribLength(MIN_VECTOR_SIZE, MAX_VECTOR_SIZE);
+    auto length = static_cast<std::size_t>(distribLength(gen));
     r.assign(length, 0);
     for (auto &value: r) {
         value = distrib(gen);
     }
+    return r;
 }
 
 void emptyDataTest() {
@@ -51,11 +57,24 @@ void overflowRiskMedian() {
     assert(median.value() == std::numeric_limits<int>::max());
 }
 
+void comparableAccumulatorRandomTest() {
+    const int TEST_QUANTITY = 10;
+    for (int i = 0; i < TEST_QUANTITY; i++) {
+        auto randData = genDataVector();
+        st::comparableAccumulator<std::less<>> min;
+        st::comparableAccumulator<std::greater<>> max;
+        for (auto value: randData) {
+            min.accumulate(value);
+            max.accumulate(value);
+        }
+        assert(min.getResult() == *std::min_element(randData.begin(), randData.end()));
+    }
+}
 
 int main() {
     emptyDataTest();
     oddDataSizeMedian();
     evenDataSizeMedian();
     overflowRiskMedian();
-
+    comparableAccumulatorRandomTest();
 }

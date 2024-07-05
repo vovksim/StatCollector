@@ -76,16 +76,37 @@ void comparableAccumulatorRandomTest() {
 }
 
 void increasingSequenceFindTest() {
-    std::vector<int> data = {1, 2, 3, 4, 2, 3, 4, 5, 6};
+    std::vector<int> data = {1, 2, 3, 4, 5, 6};
     auto result = st::sequenceFinder(data, std::less<>());
-    std::vector<int> expected = {2, 3, 4, 5, 6};
+    std::vector<int> expected = {1, 2, 3, 4, 5, 6};
     assert(std::vector<int>(result.first, result.second) == expected);
 }
 
 void decreasingSequenceFindTest() {
-    std::vector<int> data = {5, 4, 3, 2, 1, 6, 5, 4, 3};
+    std::vector<int> data = {5, 4, 3, 2, 1};
     auto result = st::sequenceFinder(data, std::greater<>());
     std::vector<int> expected = {5, 4, 3, 2, 1};
+    assert(std::vector<int>(result.first, result.second) == expected);
+}
+
+void decreasingSubSequenceFindTest() {
+    std::vector<int> data = {1, 2, 3, 2, 1, 4, 5, 6, 7, 8};
+    auto result = st::sequenceFinder(data, std::greater<>());
+    std::vector<int> expected = {2, 1};
+    assert(std::vector<int>(result.first, result.second) == expected);
+}
+
+void increasingSubSequenceFindTest() {
+    std::vector<int> data = {1, 2, 3, 2, 1, 4, 5, 6, 7, 8};
+    auto result = st::sequenceFinder(data, std::less<>());
+    std::vector<int> expected = {4, 5, 6, 7, 8};
+    assert(std::vector<int>(result.first, result.second) == expected);
+}
+
+void constantSubSequenceFindTest() {
+    std::vector<int> data = {1, 1, 1, 1, 1, 1, 1, 1};
+    auto result = st::sequenceFinder(data, std::less<>());
+    std::vector<int> expected = {1};
     assert(std::vector<int>(result.first, result.second) == expected);
 }
 
@@ -97,4 +118,7 @@ int main() {
     comparableAccumulatorRandomTest();
     increasingSequenceFindTest();
     decreasingSequenceFindTest();
+    increasingSubSequenceFindTest();
+    decreasingSubSequenceFindTest();
+    constantSubSequenceFindTest();
 }

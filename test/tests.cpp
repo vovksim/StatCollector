@@ -1,23 +1,16 @@
 //
 // Created by ivan on 04.07.24.
 //
-#include "../src/stats.hpp"
+#include "../stats.hpp"
 #include <cassert>
 #include <random>
 
 std::vector<int> genDataVector() {
-    const int MIN_VECTOR_SIZE = 1;
-    const int MAX_VECTOR_SIZE = 1000;
-    std::vector<int> r;
+    std::vector<int> r(1000);
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> distrib(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-    std::uniform_int_distribution<int> distribLength(MIN_VECTOR_SIZE, MAX_VECTOR_SIZE);
-    auto length = static_cast<std::size_t>(distribLength(gen));
-    r.assign(length, 0);
-    for (auto &value: r) {
-        value = distrib(gen);
-    }
+    std::generate(r.begin(), r.end(), [&]() { return distrib(gen); });
     return r;
 }
 
@@ -92,18 +85,18 @@ void decreasingSequenceFindTest() {
 void decreasingSubSequenceFindTest() {
     std::vector<int> data = {1, 2, 3, 2, 1, 4, 5, 6, 7, 8};
     auto result = st::sequenceFinder(data, std::greater<>());
-    std::vector<int> expected = {2, 1};
+    std::vector<int> expected = {3, 2, 1};
     assert(std::vector<int>(result.first, result.second) == expected);
 }
 
 void increasingSubSequenceFindTest() {
     std::vector<int> data = {1, 2, 3, 2, 1, 4, 5, 6, 7, 8};
     auto result = st::sequenceFinder(data, std::less<>());
-    std::vector<int> expected = {4, 5, 6, 7, 8};
+    std::vector<int> expected = {1, 4, 5, 6, 7, 8};
     assert(std::vector<int>(result.first, result.second) == expected);
 }
 
-void constantSubSequenceFindTest() {
+void uniformSubSequenceFindTest() {
     std::vector<int> data = {1, 1, 1, 1, 1, 1, 1, 1};
     auto result = st::sequenceFinder(data, std::less<>());
     std::vector<int> expected = {1};
@@ -120,5 +113,5 @@ int main() {
     decreasingSequenceFindTest();
     increasingSubSequenceFindTest();
     decreasingSubSequenceFindTest();
-    constantSubSequenceFindTest();
+    uniformSubSequenceFindTest();
 }

@@ -4,4 +4,4 @@ project(StatCollectorSrc)
 
 
 add_executable(StatCollector main.cpp
-        stats.hpp)
+        ../stats.hpp)

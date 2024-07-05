@@ -1,6 +1,6 @@
 enable_testing()
 
-add_executable(StatCollectorTest ~/CLionProjects/StatCollector/test/tests.cpp)
+add_executable(StatCollectorTest tests.cpp)
 
 target_link_libraries(StatCollectorTest)
 

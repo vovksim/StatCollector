@@ -25,8 +25,6 @@ namespace st {
         }
 
         auto mid = data.begin() + data.size() / 2;
-
-
         if (data.size() % 2 == 1) {
             std::nth_element(data.begin(), mid, data.end());
             return {*mid};
@@ -34,7 +32,7 @@ namespace st {
             auto midNeighbour = data.begin() + data.size() / 2 - 1;
             std::nth_element(data.begin(), mid, data.end());
             std::nth_element(data.begin(), midNeighbour, data.end());
-            return {static_cast<double>(*mid + *midNeighbour) / 2.0};
+            return {(static_cast<double>(*mid) + static_cast<double>(*midNeighbour)) / 2.0};
         }
     }
 
@@ -78,7 +76,11 @@ namespace st {
             return result;
         }
 
-        explicit avgAccumulator(std::size_t size) : length(size) {};
+        explicit avgAccumulator(std::size_t size) : length(size) {
+            if (length != 0) {
+                result = 0;
+            }
+        };
     };
 
     template<typename Comparator>

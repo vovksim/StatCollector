@@ -31,7 +31,7 @@ std::ostream &operator<<(std::ostream &os, stats &value) {
     os << "Max: " << value.max << std::endl;
     os << "Min: " << value.min << std::endl;
     os << "Median: " << value.median << std::endl;
-    os << "Average: " << std::setprecision(std::numeric_limits<double>::max_digits10) << value.avg << std::endl;
+    os << "Average: " << std::setprecision(5) << value.avg << std::endl;
     os << "Ascending sequence: " << value.ascSeq << std::endl;
     os << "Descending sequence: " << value.desSeq;
     return os;
